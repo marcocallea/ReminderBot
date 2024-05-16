@@ -1,1 +1,1 @@
-# reminderbotpriv
+# ReminderBot
