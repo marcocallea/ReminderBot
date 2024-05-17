@@ -5,6 +5,9 @@ from bot import (
     start,
     create_pagination_keyboard,
     paginate,
+    calendar_callback,
+    add
+
 )
 import bot
 
@@ -66,6 +69,136 @@ class TestPaginationFunctions(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(keyboard_markup, InlineKeyboardMarkup)
         self.assertTrue(len(keyboard_markup.inline_keyboard) > 0)
 
+
+class TestCalendarCallback(unittest.TestCase):
+    async def test_day_selection(self):
+        # Test the selection of a day
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "day-10"
+        context.user_data = {}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        self.assertEqual(context.user_data["day"], 10)
+        query.edit_message_text.assert_awaited_once()
+
+    async def test_month_selection(self):
+        # Test the selection of a month
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "month-Feb"
+        month_to_number = {"Feb": 2}
+        context.user_data = {}
+        context.bot_data = {"month_to_number": month_to_number}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        self.assertEqual(context.user_data["month"], 2)
+        query.edit_message_text.assert_awaited_once()
+
+    async def test_year_selection(self):
+        # Test the selection of a year
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "year-2025"
+        context.user_data = {}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        self.assertEqual(context.user_data["year"], 2025)
+        query.edit_message_text.assert_awaited_once()
+
+    async def test_hour_selection(self):
+        # Test the selection of an hour
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "hour-13"
+        context.user_data = {}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        self.assertEqual(context.user_data["hour"], 13)
+        query.edit_message_text.assert_awaited_once()
+
+    async def test_minute_selection(self):
+        # Test the selection of a minute
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "minute-45"
+        context.user_data = {}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        self.assertEqual(context.user_data["minute"], 45)
+        query.edit_message_text.assert_awaited_once()
+
+    async def test_interval_selection(self):
+        # Test the selection of an interval
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "interval-15"
+        context.user_data = {}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        self.assertEqual(context.user_data["interval"], 15)
+        query.edit_message_text.assert_awaited_once()
+
+    async def test_final_message_prompt(self):
+        # Test the prompt for the final message after selecting the interval
+        update = MagicMock()
+        context = MagicMock()
+        query = AsyncMock()
+        update.callback_query = query
+        query.data = "interval-20"
+        context.user_data = {}
+
+        await calendar_callback(update, context)
+
+        query.answer.assert_awaited()
+        query.edit_message_text.assert_awaited_with(
+            "Inserisci il messaggio del promemoria! :"
+        )
+
+
+    @patch("bot.create_pagination_keyboard")
+    async def test_add(self, mock_create_pagination_keyboard):
+        # Configura il mock per la create_pagination_keyboard
+        mock_keyboard = AsyncMock()
+        mock_create_pagination_keyboard.return_value = mock_keyboard
+
+        # Esegui la funzione
+        await add(self.update, self.context)
+
+        # Verifica che create_pagination_keyboard sia stato chiamato correttamente
+        mock_create_pagination_keyboard.assert_called_once_with(
+            range(1, 32), 0, 8, "day"
+        )
+
+        # Verifica che reply_text sia stato chiamato correttamente
+        self.update.message.reply_text.assert_awaited_once_with(
+            "Scegli il giorno:", reply_markup=mock_keyboard
+        )
+
 class TestMain(unittest.TestCase):
 
     @patch("bot.ApplicationBuilder")
@@ -86,6 +219,8 @@ class TestMain(unittest.TestCase):
 
         # Verifica che run_polling sia stato chiamato
         mock_application.run_polling.assert_called_once()
+
+
 
 
 if __name__ == "__main__":
