@@ -1,5 +1,7 @@
-<<<<<<< HEAD
-# reminderbotpriv
-=======
-# ReminderBot
->>>>>>> acfa1e2168f419170dc040bd806fd1f67bdaf7d8
+*IN LAVORAZIONE*
+# ReminderMe
+RemindMe è un bot telegram che permette di gestire i tuoi promemoria
+
+/start  per iniziare a usare il bot
+/add  per aggiungere un promemoria
+/show  per mostrare i promemoria aggiunti ed eventualmente rimuoverli
