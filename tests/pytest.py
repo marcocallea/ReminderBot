@@ -7,7 +7,6 @@ from bot import (
     paginate,
     calendar_callback,
     add
-
 )
 import bot
 
@@ -68,7 +67,6 @@ class TestPaginationFunctions(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(keyboard_markup, InlineKeyboardMarkup)
         self.assertTrue(len(keyboard_markup.inline_keyboard) > 0)
-
 
 class TestCalendarCallback(unittest.TestCase):
     async def test_day_selection(self):
@@ -179,7 +177,6 @@ class TestCalendarCallback(unittest.TestCase):
             "Inserisci il messaggio del promemoria! :"
         )
 
-
     @patch("bot.create_pagination_keyboard")
     async def test_add(self, mock_create_pagination_keyboard):
         # Configura il mock per la create_pagination_keyboard
@@ -200,7 +197,6 @@ class TestCalendarCallback(unittest.TestCase):
         )
 
 class TestMain(unittest.TestCase):
-
     @patch("bot.ApplicationBuilder")
     def test_main(self, mock_ApplicationBuilder):
         # Setup
