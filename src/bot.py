@@ -1,7 +1,11 @@
+"""RemindMe"""
 import asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler, CallbackContext
 from datetime import datetime, timedelta
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler, CallbackContext
+)
+
 
 
 MIOTOKEN = ""  # inserite il vostro token
@@ -22,19 +26,24 @@ month_to_number = {
     "Dic": 12,
 }
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update,) -> None:
+    """Invia un messaggio di benvenuto all'utente e mostra i comandi del bot."""
     await update.message.reply_text(
-        f"Ciao {update.effective_user.first_name} {update.effective_user.last_name}, benvenuto su RemindMe Bot, usa il comando /add per iniziare! Ricorda puoi anche usare il comando /show per mostrare i promemoria già inseriti."
+        f"Ciao {update.effective_user.first_name} {update.effective_user.last_name}, "
+        "benvenuto su RemindMe Bot, usa il comando /add per iniziare! Ricorda puoi anche usare "
+        "il comando /show per mostrare i promemoria già inseriti."
     )
 
 def paginate(items, page=0, per_page=9):
-    start = page * per_page
-    end = start + per_page
+    """Suddivide una lista di elementi in pagine."""
+    starter = page * per_page
+    end = starter + per_page
     has_next = end < len(items)
-    has_prev = start > 0
-    return items[start:end], has_prev, has_next
+    has_prev = starter > 0
+    return items[starter:end], has_prev, has_next
 
 def create_pagination_keyboard(items, page, per_page, prefix):
+    """Crea una tastiera di paginazione."""
     items_page, has_prev, has_next = paginate(items, page, per_page)
     keyboard = [
         [
@@ -62,13 +71,12 @@ def create_pagination_keyboard(items, page, per_page, prefix):
     return InlineKeyboardMarkup(keyboard)
 
 async def calendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Gestisce i callback della tastiera del calendario."""
     query = update.callback_query
     await query.answer()
     data = query.data
     components = data.split("-")
-    action_type = components[
-        0
-    ]  # Definisce il tipo di azione (day, month, year, hour, minute, interval)
+    action_type = components[0]  #Definisce il tipo di azione(day,month,year,hour,minute,interval)
 
     type_config = {
         "day": {
@@ -79,18 +87,7 @@ async def calendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         },
         "month": {
             "range": [
-                "Gen",
-                "Feb",
-                "Mar",
-                "Apr",
-                "Mag",
-                "Giu",
-                "Lug",
-                "Ago",
-                "Set",
-                "Ott",
-                "Nov",
-                "Dic",
+                "Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"
             ],
             "per_page": 6,
             "next_step": "year",
@@ -156,24 +153,26 @@ async def calendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 f"Scegli {next_step}:", reply_markup=reply_markup
             )
 
-async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Gestisce l'aggiunta dei promemoria
+async def add(update: Update) -> None:
+    """Gestisce l'aggiunta dei promemoria."""
     reply_markup = create_pagination_keyboard(range(1, 32), 0, 8, "day")
     await update.message.reply_text("Scegli il giorno:", reply_markup=reply_markup)
 
 async def handle_reminder_message(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    #parte solo se l'utente ha inserito tutti gli attributi
+    """Gestisce il messaggio di promemoria una volta inseriti tutti gli attributi."""
     if all(
-            key in context.user_data
-            for key in ["day", "month", "year", "hour", "minute", "interval"]
+        key in context.user_data
+        for key in ["day", "month", "year", "hour", "minute", "interval"]
     ):
-        date_str = f"{context.user_data['year']}-{context.user_data['month']}-{context.user_data['day']} {context.user_data['hour']}:{context.user_data['minute']}:00"
-        when = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-        message = (
-            update.message.text
+        date_str = (
+            f"{context.user_data['year']}-{context.user_data['month']}-"
+            f"{context.user_data['day']} {context.user_data['hour']}:"
+            f"{context.user_data['minute']}:00"
         )
+        when = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        message = update.message.text
         interval = context.user_data["interval"]
 
         chat_id = update.message.chat_id
@@ -191,23 +190,24 @@ async def handle_reminder_message(
         # chiamiamo la schedule_reminder per programmare effettivamente l'invio del promemoria
         await schedule_reminder(context, reminder_id, reminder)
         await update.message.reply_text(
-            f"Promemoria {message} impostato con il seguente ID: {reminder_id}, Il promemoria verrà inviato ogni {interval} giorni!"
+            f"Promemoria {message} impostato con il seguente ID: {reminder_id}, "
+            f"Il promemoria verrà inviato ogni {interval} giorni!"
         )
 
         # Puliamo i dati dell'utente dopo aver aggiunto il promemoria
-        del context.user_data["day"]
-        del context.user_data["month"]
-        del context.user_data["year"]
-        del context.user_data["hour"]
-        del context.user_data["interval"]
+        keys_to_delete = ["day", "month", "year", "hour", "minute", "interval"]
+        for key in keys_to_delete:
+            del context.user_data[key]
 
 async def schedule_reminder(
-        context: ContextTypes.DEFAULT_TYPE, reminder_id: str, reminder: dict
-):
+    context: ContextTypes.DEFAULT_TYPE, reminder_id: str, reminder: dict
+) -> None:
+    """Pianifica l'invio del promemoria."""
     now = datetime.now()
 
     if reminder["time"] <= now:
-        # Se l'ora specificata nel promemoria è già passata, pianifica il primo invio per il minuto successivo
+        # Se l'ora specificata nel promemoria è già passata
+        # pianifica il primo invio per il minuto successivo
         next_time = now + timedelta(minutes=1)
     else:
         # Altrimenti, pianifica il primo invio all'ora specificata nel promemoria
@@ -218,9 +218,10 @@ async def schedule_reminder(
     await schedule_next_reminder(context, reminder_id, reminder, delay)
 
 async def schedule_next_reminder(
-        context: ContextTypes.DEFAULT_TYPE, reminder_id: str, reminder: dict, delay: float
-):
-    def job_callback(context: CallbackContext):
+    context: ContextTypes.DEFAULT_TYPE, reminder_id: str, reminder: dict, delay: float
+) -> None:
+    """Pianifica il promemoria."""
+    def job_callback(context: CallbackContext) -> None:
         chat_id = reminder["chat_id"]
         if reminder_id in reminders.get(chat_id, {}):
             asyncio.create_task(
@@ -231,26 +232,28 @@ async def schedule_next_reminder(
                 context.job_queue.run_once(job_callback, reminder["interval"] * 60)
         else:
             print(
-                f"Il promemoria {reminder['message']} è stato rimosso, quindi non verrà inviato nuovamente."
+                f"Il promemoria {reminder['message']} è stato rimosso,non verrà inviato nuovamente."
             )
-            return
+            #return
 
     # Programma il job per il promemoria corrente
     context.job_queue.run_once(job_callback, delay)
 
-async def send_reminder(bot: Bot, chat_id: int, message: str, reminder_id: str):
-    # Inviare il messaggio usando l'oggetto bot
-    await bot.send_message(chat_id=chat_id, text="\uE142" f" Promemoria: {message}")
+async def send_reminder(bot: Bot, chat_id: int, message: str, reminder_id: str) -> None:
+    """Invia il promemoria all'utente."""
+    await bot.send_message(chat_id=chat_id, text=f"\uE142 Promemoria: {message}")
     await asyncio.sleep(2)
     if (
-            reminder_id in reminders.get(chat_id, {})
-            and reminders[chat_id][reminder_id]["interval"] == 0
+        reminder_id in reminders.get(chat_id, {})
+        and reminders[chat_id][reminder_id]["interval"] == 0
     ):
         # Rimuovi il promemoria una volta inviato se l'intervallo è 0
         del reminders[chat_id][reminder_id]
         if not reminders[chat_id]:
             del reminders[chat_id]
-def main():
+
+def main() -> None:
+    """Funzione principale per eseguire il bot."""
     application = ApplicationBuilder().token(MIOTOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("add", add))
@@ -266,7 +269,6 @@ def main():
     )
 
     application.run_polling()
-
 
 if __name__ == "__main__":
     main()
