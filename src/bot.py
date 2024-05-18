@@ -22,12 +22,10 @@ month_to_number = {
     "Dic": 12,
 }
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         f"Ciao {update.effective_user.first_name} {update.effective_user.last_name}, benvenuto su RemindMe Bot, usa il comando /add per iniziare! Ricorda puoi anche usare il comando /show per mostrare i promemoria già inseriti."
     )
-
 
 def paginate(items, page=0, per_page=9):
     start = page * per_page
@@ -35,7 +33,6 @@ def paginate(items, page=0, per_page=9):
     has_next = end < len(items)
     has_prev = start > 0
     return items[start:end], has_prev, has_next
-
 
 def create_pagination_keyboard(items, page, per_page, prefix):
     items_page, has_prev, has_next = paginate(items, page, per_page)
@@ -63,7 +60,6 @@ def create_pagination_keyboard(items, page, per_page, prefix):
         keyboard.append(navigation_row)
 
     return InlineKeyboardMarkup(keyboard)
-
 
 async def calendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -160,7 +156,6 @@ async def calendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 f"Scegli {next_step}:", reply_markup=reply_markup
             )
 
-
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Gestisce l'aggiunta dei promemoria
     reply_markup = create_pagination_keyboard(range(1, 32), 0, 8, "day")
@@ -206,7 +201,6 @@ async def handle_reminder_message(
         del context.user_data["hour"]
         del context.user_data["interval"]
 
-
 async def schedule_reminder(
         context: ContextTypes.DEFAULT_TYPE, reminder_id: str, reminder: dict
 ):
@@ -222,7 +216,6 @@ async def schedule_reminder(
     # Calcola il ritardo fino al primo invio
     delay = (next_time - now).total_seconds()
     await schedule_next_reminder(context, reminder_id, reminder, delay)
-
 
 async def schedule_next_reminder(
         context: ContextTypes.DEFAULT_TYPE, reminder_id: str, reminder: dict, delay: float
