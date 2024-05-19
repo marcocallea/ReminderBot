@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
 from telegram import InlineKeyboardMarkup, Bot, InlineKeyboardButton
 from freezegun import freeze_time
-import bot
-from bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
+from src import bot
+from src.bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
                  add, handle_reminder_message, calendar_callback, show_reminders,
                  handle_remove_callback)
 
@@ -103,7 +103,7 @@ class TestAddFunction(IsolatedAsyncioTestCase):
         self.update = AsyncMock()
         self.context = AsyncMock()
 
-    @patch('bot.create_pagination_keyboard')
+    @patch('src.bot.create_pagination_keyboard')
     async def test_add(self, mock_create_pagination_keyboard):
         """Configura il mock per la create_pagination_keyboard"""
         mock_keyboard = AsyncMock()
