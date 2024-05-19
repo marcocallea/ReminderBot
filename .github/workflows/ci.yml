@@ -30,4 +30,5 @@ jobs:
       - name: Lint with pylint
         run: pylint $(git ls-files '*.py') --disable=W0611,W0622
       - name: Test with pytest
-        run: pytest --cov=src --cov-report=xml tests/
+        run: pytest --cov=src --cov-report=xml tests/ --pythonpath=src
+
