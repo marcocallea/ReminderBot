@@ -5,8 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
 from telegram import InlineKeyboardMarkup, Bot, InlineKeyboardButton
 from freezegun import freeze_time
-import bot
-from bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
+from src.bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
                  add, handle_reminder_message, calendar_callback, show_reminders,
                  handle_remove_callback)
 
