@@ -1,12 +1,15 @@
-"""RemindMe"""
 import asyncio
 from datetime import datetime, timedelta
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler, CallbackContext
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+    CallbackContext,
+    CallbackQueryHandler,
+    filters,
+    MessageHandler,
 )
-
-
 
 MIOTOKEN = ""  # inserite il vostro token
 reminders = {}
@@ -251,13 +254,52 @@ async def send_reminder(bot: Bot, chat_id: int, message: str, reminder_id: str) 
         del reminders[chat_id][reminder_id]
         if not reminders[chat_id]:
             del reminders[chat_id]
+            
+async def show_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Permette la visualizzazione dei promemoria in memoria del bot
+    chat_id = update.message.chat_id
+    if chat_id in reminders and reminders[chat_id]:
+        keyboard = [
+            [InlineKeyboardButton(f"Rimuovi {rid}", callback_data=f"remove-{rid}")]
+            for rid in reminders[chat_id]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        message_text = "\n".join(
+            [
+                f"Promemoria: {rem['message']},\ncon ID: {rid}\nimpostato per giorno: {rem['time']}\nsi ripeterà ogni {rem['interval']} giorni\n"
+                for rid, rem in reminders[chat_id].items()
+            ]
+        )
+        await update.message.reply_text(message_text, reply_markup=reply_markup)
+    else:
+        await update.message.reply_text("Nessun promemoria salvato!")
+
+async def handle_remove_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    # Gestisce la rimozione dei promemoria
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    if data.startswith("remove-"):
+        reminder_id = data.split("-")[1]
+        chat_id = query.message.chat_id
+
+        if chat_id in reminders and reminder_id in reminders[chat_id]:
+            del reminders[chat_id][reminder_id]
+            if not reminders[chat_id]:
+                del reminders[chat_id]
+            await query.edit_message_text("Promemoria rimosso con successo!")
 
 def main() -> None:
     """Funzione principale per eseguire il bot."""
     application = ApplicationBuilder().token(MIOTOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("add", add))
-
+    application.add_handler(CommandHandler("show", show_reminders))
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_reminder_message)
+    )
     # Aggiunge gestori per le callback delle query
     application.add_handler(CallbackQueryHandler(calendar_callback, pattern="^day-"))
     application.add_handler(CallbackQueryHandler(calendar_callback, pattern="^month-"))
@@ -267,8 +309,14 @@ def main() -> None:
     application.add_handler(
         CallbackQueryHandler(calendar_callback, pattern="^interval-")
     )
+    application.add_handler(
+        CallbackQueryHandler(handle_remove_callback, pattern="^remove-")
+    )
+
 
     application.run_polling()
 
 if __name__ == "__main__":
     main()
+
+           
