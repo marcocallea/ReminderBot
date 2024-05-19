@@ -37,3 +37,12 @@ La funzione **show_reminders** mostra i promemoria salvati per l'utente corrente
 
 #### 9. Funzione Principale e Avvio del Bot
 La funzione main configura l'applicazione del bot, aggiungendo i gestori per i vari comandi e callback. Utilizza il metodo run_polling per iniziare a ricevere e gestire le richieste degli utenti.
+
+##### Conclusioni e credits
+Progetto sviluppato da:
+- [**Marco Callea**](https://github.com/marcocallea)
+- [**Nunzio Depetro**](https://github.com/NuccioDe)
+- [**Biagio Cubisino**](https://github.com/Biagiocu99)
+
+Questo progetto fa parte del corso **Quality Development** dell'**Università di Catania**
+
