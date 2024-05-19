@@ -1,20 +1,18 @@
-"""
-Unittests di bot.py
-"""
+"""Unittests di bot.py"""
 
 from unittest import TestCase, IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
 from telegram import InlineKeyboardMarkup, Bot, InlineKeyboardButton
 from freezegun import freeze_time
-import unittest
 import bot
-from bot import schedule_reminder, schedule_next_reminder, reminders,send_reminder, add, handle_reminder_message, calendar_callback, show_reminders, handle_remove_callback
+from bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
+                 add, handle_reminder_message, calendar_callback, show_reminders,
+                 handle_remove_callback)
+
 
 class TestStartFunction(IsolatedAsyncioTestCase):
-    """
-    Classe per la funzione start
-    """
+    """Classe per la funzione start"""
     async def test_start(self):
         """
         Testa la funzione start
@@ -107,7 +105,7 @@ class TestAddFunction(IsolatedAsyncioTestCase):
 
     @patch('bot.create_pagination_keyboard')
     async def test_add(self, mock_create_pagination_keyboard):
-        # Configura il mock per la create_pagination_keyboard
+        """Configura il mock per la create_pagination_keyboard"""
         mock_keyboard = AsyncMock()
         mock_create_pagination_keyboard.return_value = mock_keyboard
 
@@ -266,7 +264,8 @@ class TestCalendarCallback(TestCase):
 
         # Execute the function
         update = MagicMock()
-        await bot.add(update)
+        _context = AsyncMock()
+        await bot.add(update,_context)
 
         # Verify that create_pagination_keyboard was called correctly
         mock_create_pagination_keyboard.assert_called_once_with(
@@ -282,6 +281,7 @@ class TestBotReminderFunctions(IsolatedAsyncioTestCase):
     Classe test reminder
     """
     async def test_handle_reminder_message(self):
+        """test effettivo funzionamento funzione handle reminder"""
         update = AsyncMock()
         context = AsyncMock()
         chat_id = 1234
@@ -292,20 +292,22 @@ class TestBotReminderFunctions(IsolatedAsyncioTestCase):
             'hour': '12', 'minute': '30', 'interval': 0
         }
 
-        reminders = {}
+        reminderz = {}
         with patch('bot.schedule_reminder', new_callable=AsyncMock) as mock_schedule_reminder:
-            with patch('bot.reminders', reminders):
+            with patch('bot.reminders', reminderz):
                 await handle_reminder_message(update, context)
-                self.assertIn(chat_id, reminders)
+                self.assertIn(chat_id, reminderz)
                 mock_schedule_reminder.assert_awaited()
                 update.message.reply_text.assert_awaited_with(
-                    "Promemoria Messaggio di prova impostato con il seguente ID: 1234_0, Il promemoria verrà inviato ogni 0 giorni!")
+                    "Promemoria Messaggio di prova impostato con il seguente ID: 1234_0, "
+                    "Il promemoria verrà inviato ogni 0 giorni!")
 
 
 class TestScheduleReminder(IsolatedAsyncioTestCase):
-
+    """Classe per funzioni di testing schedule_reminder"""
     @freeze_time("2024-05-13 12:00:00")
     async def test_reminder_time_passed(self):
+        """test con tempo trascorso"""
         context = AsyncMock()
         reminder_id = 'test123'
         reminder = {'time': datetime.now() - timedelta(hours=1)}
@@ -313,11 +315,13 @@ class TestScheduleReminder(IsolatedAsyncioTestCase):
         with patch('bot.schedule_next_reminder', new_callable=AsyncMock) as mocked_schedule_next:
             await schedule_reminder(context, reminder_id, reminder)
 
-            expected_delay = 60  # Since reminder is in the past, should be scheduled 1 minute later
-            mocked_schedule_next.assert_called_once_with(context, reminder_id, reminder, expected_delay)
+            expected_delay = 60
+            mocked_schedule_next.assert_called_once_with(context,
+                                                         reminder_id, reminder, expected_delay)
 
     @freeze_time("2024-05-13 12:00:00")
     async def test_reminder_time_future(self):
+        """test con tempo futuro"""
         context = AsyncMock()
         reminder_id = 'test456'
         reminder = {'time': datetime.now() + timedelta(hours=1)}
@@ -326,7 +330,8 @@ class TestScheduleReminder(IsolatedAsyncioTestCase):
             await schedule_reminder(context, reminder_id, reminder)
 
             expected_delay = 3600  # 1 hour in seconds
-            mocked_schedule_next.assert_called_once_with(context, reminder_id, reminder, expected_delay)
+            mocked_schedule_next.assert_called_once_with(context, reminder_id,
+                                                         reminder, expected_delay)
 
 
 class TestScheduleNextReminder(IsolatedAsyncioTestCase):
@@ -345,7 +350,7 @@ class TestScheduleNextReminder(IsolatedAsyncioTestCase):
 
 
     async def test_schedule_with_existing_reminder(self):
-        # Imposta il dizionario globale reminders
+        """Test con promemoria esistente"""
         reminders[self.reminder['chat_id']] = {self.reminder_id: self.reminder}
 
         # Mock asyncio.create_task per intercettare la sua chiamata
@@ -354,43 +359,22 @@ class TestScheduleNextReminder(IsolatedAsyncioTestCase):
             await schedule_next_reminder(self.context, self.reminder_id, self.reminder, 5)
 
             # Assicurati che la coda dei job abbia programmato il callback correttamente
-            args, kwargs = self.context.job_queue.run_once.call_args
+            args, _ = self.context.job_queue.run_once.call_args
             job_callback = args[0]
-            self.assertEqual(args[1], 5)  # Verifica il ritardo impostato per la programmazione del job
+            self.assertEqual(args[1], 5)  #Verifica ritardo settato per la programmazione del job
 
             # Esegui manualmente il job callback per testare il flusso interno
             job_callback(self.context)
             mock_create_task.assert_called_once()
 
-class TestBotReminderFunctions(IsolatedAsyncioTestCase):
-    """
-    Classe test funzione reminder
-    """
-    async def test_handle_reminder_message(self):
-        update = AsyncMock()
-        context = AsyncMock()
-        chat_id = 1234
-        update.message.chat_id = chat_id
-        update.message.text = "Messaggio di prova"
-        context.user_data = {
-            'day': '14', 'month': '5', 'year': '2024',
-            'hour': '12', 'minute': '30', 'interval': 0
-        }
 
-        reminders = {}
-        with patch('bot.schedule_reminder', new_callable=AsyncMock) as mock_schedule_reminder:
-            with patch('bot.reminders', reminders):
-                await handle_reminder_message(update, context)
-                self.assertIn(chat_id, reminders)
-                mock_schedule_reminder.assert_awaited()
-                update.message.reply_text.assert_awaited_with(
-                    "Promemoria Messaggio di prova impostato con il seguente ID: 1234_0, Il promemoria verrà inviato ogni 0 giorni!")
 
 class TestReminderMessageFunction(IsolatedAsyncioTestCase):
     """
     classe per testare funzione gestione messaggio
     """
     async def test_interval_selection_handling(self):
+        """test selezione intervallo"""
         update = AsyncMock()
         context = AsyncMock()
 
@@ -404,7 +388,8 @@ class TestReminderMessageFunction(IsolatedAsyncioTestCase):
         await calendar_callback(update, context)
 
         # Verifiche
-        self.assertEqual(context.user_data['interval'], 10, "L'intervallo recuperato non corrisponde al valore atteso.")
+        self.assertEqual(context.user_data['interval'], 10, "L'intervallo recuperato"
+                                                            " non corrisponde al valore atteso.")
         update.callback_query.edit_message_text.assert_awaited_with(
             'Inserisci il messaggio del promemoria! :'
         )
@@ -413,16 +398,19 @@ class TestReminderMessageFunction(IsolatedAsyncioTestCase):
 class TestSendFunction(IsolatedAsyncioTestCase):
     """classe per funzioni di test funzione send"""
     async def test_send_reminder(self):
+        """test con intervallo diverso da 0"""
         reminder_id = 1
-        bot = AsyncMock(spec=Bot)
+        botz = AsyncMock(spec=Bot)
         chat_id = 123456
         message = "Ricordati di chiamare!"
-        await send_reminder(bot, chat_id, message,reminder_id)
-        bot.send_message.assert_awaited_once_with(chat_id=chat_id, text="\uE142 Promemoria: Ricordati di chiamare!")
+        await send_reminder(botz, chat_id, message,reminder_id)
+        botz.send_message.assert_awaited_once_with(chat_id=chat_id,
+                                                  text="\uE142 Promemoria: Ricordati di chiamare!")
 
     async def test_remove_reminder_with_zero_interval(self):
+        """test con intervallo 0"""
         reminder_id = '1'
-        bot = AsyncMock(spec=Bot)
+        botz = AsyncMock(spec=Bot)
         chat_id = 123456
         message = "Ricordati di chiamare!"
 
@@ -434,60 +422,63 @@ class TestSendFunction(IsolatedAsyncioTestCase):
             }
         }
 
-        await send_reminder(bot, chat_id, message, reminder_id)
+        await send_reminder(botz, chat_id, message, reminder_id)
 
         # Verify the reminder has been removed
         self.assertNotIn(reminder_id, reminders.get(chat_id, {}),
                          "The reminder was not removed even though the interval was 0.")
 
-        # Optionally, ensure that the chat_id dictionary is also deleted if there are no more reminders
         self.assertNotIn(chat_id, reminders,
-                         "The chat_id dictionary was not removed even though there are no more reminders.")
+                         "The chat_id dictionary was not removed.")
 
 
-class TestShowRemindersFunction(unittest.IsolatedAsyncioTestCase):
+class TestShowRemindersFunction(IsolatedAsyncioTestCase):
+    """Classe per test funzione show"""
     async def test_show_reminders_empty(self):
+        """test show reminder senza promemoria"""
         update = AsyncMock()
         context = AsyncMock()
         chat_id = 123456
         update.effective_chat.id = chat_id
-        reminders = {}
+        reminderz = {}
         # Patch del dizionario dei promemoria
-        with patch("bot.reminders", reminders):
+        with patch("bot.reminders", reminderz):
             await show_reminders(update, context)
-            # Qui, aspettati che la funzione di risposta sia stata chiamata con il messaggio dei promemoria esistenti
             update.message.reply_text.assert_awaited_with("Nessun promemoria salvato!")
 
     async def test_show_reminders_data(self):
+        """test show reminder con promomoria già inserito"""
         update = AsyncMock()
         context = AsyncMock()
         chat_id = 123456
         update.message.chat_id = chat_id
 
-        reminders = {
+        reminderz = {
             chat_id: {
                 1: {"message": "Visita medica", "time": "2024-05-14", "interval": 30}
             }
         }
-        expected_message = "Promemoria: Visita medica,\ncon ID: 1\nimpostato per giorno: 2024-05-14\nsi ripeterà ogni 30 giorni\n"
+        expected_message = ("Promemoria: Visita medica,\ncon ID: 1\nimpostato "
+                            "per giorno: 2024-05-14\nsi ripeterà ogni 30 giorni\n")
         expected_keyboard = [
             [InlineKeyboardButton("Rimuovi 1", callback_data="remove-1")]
         ]
         expected_reply_markup = InlineKeyboardMarkup(expected_keyboard)
 
-        with patch("bot.reminders", reminders):
+        with patch("bot.reminders", reminderz):
             await show_reminders(update, context)
             update.message.reply_text.assert_awaited_with(
                 expected_message, reply_markup=expected_reply_markup
             )
 
 
-class TesoveFunction(unittest.IsolatedAsyncioTestCase):
+class TestRemoveFunction(IsolatedAsyncioTestCase):
+    """Classe per test funzione Remove"""
     async def test_handle_remove_callback(self):
-        # Setup dell'ambiente di test
+        """test rimozione"""
         chat_id = 123456
         reminder_id = "1"
-        reminders = {
+        reminderz = {
             chat_id: {
                 reminder_id: {
                     "message": "Visita medica",
@@ -505,17 +496,17 @@ class TesoveFunction(unittest.IsolatedAsyncioTestCase):
         update.callback_query.data = f"remove-{reminder_id}"
 
         # Patching del dizionario reminders all'interno del modulo bot
-        with patch("bot.reminders", reminders):
+        with patch("bot.reminders", reminderz):
             # Chiamata alla funzione da testare
             await handle_remove_callback(update, update.callback_query)
 
             # Verifiche
-            if chat_id in reminders and reminder_id in reminders[chat_id]:
+            if chat_id in reminderz and reminder_id in reminderz[chat_id]:
                 self.fail("Il promemoria non è stato rimosso correttamente.")
-            elif chat_id not in reminders:
+            elif chat_id not in reminderz:
                 # Se la chat_id non è più presente, verificare che l'eliminazione sia corretta
                 self.assertEqual(
-                    len(reminders.get(chat_id, {})),
+                    len(reminderz.get(chat_id, {})),
                     0,
                     "La chat_id è stata rimossa completamente, ma non era vuota.",
                 )
