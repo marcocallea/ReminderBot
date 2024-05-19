@@ -1,3 +1,4 @@
+"""RemindMe Bot"""
 import asyncio
 from datetime import datetime, timedelta
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
@@ -29,7 +30,7 @@ month_to_number = {
     "Dic": 12,
 }
 
-async def start(update: Update, context:ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, _context:ContextTypes.DEFAULT_TYPE) -> None:
     """Invia un messaggio di benvenuto all'utente e mostra i comandi del bot."""
     await update.message.reply_text(
         f"Ciao {update.effective_user.first_name} {update.effective_user.last_name}, "
@@ -156,7 +157,7 @@ async def calendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 f"Scegli {next_step}:", reply_markup=reply_markup
             )
 
-async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def add(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     """Gestisce l'aggiunta dei promemoria."""
     reply_markup = create_pagination_keyboard(range(1, 32), 0, 8, "day")
     await update.message.reply_text("Scegli il giorno:", reply_markup=reply_markup)
@@ -254,9 +255,8 @@ async def send_reminder(bot: Bot, chat_id: int, message: str, reminder_id: str) 
         del reminders[chat_id][reminder_id]
         if not reminders[chat_id]:
             del reminders[chat_id]
-            
-async def show_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Permette la visualizzazione dei promemoria in memoria del bot
+async def show_reminders(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Permette la visualizzazione dei promemoria in memoria del bot"""
     chat_id = update.message.chat_id
     if chat_id in reminders and reminders[chat_id]:
         keyboard = [
@@ -266,7 +266,8 @@ async def show_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         reply_markup = InlineKeyboardMarkup(keyboard)
         message_text = "\n".join(
             [
-                f"Promemoria: {rem['message']},\ncon ID: {rid}\nimpostato per giorno: {rem['time']}\nsi ripeterà ogni {rem['interval']} giorni\n"
+                f"Promemoria: {rem['message']},\ncon ID: {rid}\nimpostato per giorno:"
+                f" {rem['time']}\nsi ripeterà ogni {rem['interval']} giorni\n"
                 for rid, rem in reminders[chat_id].items()
             ]
         )
@@ -275,9 +276,9 @@ async def show_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("Nessun promemoria salvato!")
 
 async def handle_remove_callback(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, _context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    # Gestisce la rimozione dei promemoria
+    """Gestisce la rimozione dei promemoria"""
     query = update.callback_query
     await query.answer()
     data = query.data
@@ -318,5 +319,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-           
