@@ -367,6 +367,26 @@ class TestScheduleNextReminder(IsolatedAsyncioTestCase):
             job_callback(self.context)
             mock_create_task.assert_called_once()
 
+    @patch('builtins.print')
+    async def test_reminder_removed(self, mock_print):
+        # Qui rimuoviamo il reminder settato nella setup
+        self.context.user_data['reminders'].pop(self.reminder_id, None)
+
+        # Chiamata alla funzione da testare
+        await schedule_next_reminder(self.context, self.reminder_id, self.reminder, 5)
+
+        # Ottieni il callback job e eseguilo manualmente
+        args, kwargs = self.context.job_queue.run_once.call_args
+        job_callback = args[0]
+        job_callback(self.context)  
+
+        # Verifica che la funzione print sia stata chiamata 
+        mock_print.assert_called_once_with(
+            f"Il promemoria {self.reminder['message']} è stato rimosso,non verrà inviato nuovamente.")
+
+        
+        self.assertEqual(self.context.job_queue.run_once.call_count, 1)
+
 
 
 class TestReminderMessageFunction(IsolatedAsyncioTestCase):
