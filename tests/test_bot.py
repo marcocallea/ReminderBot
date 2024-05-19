@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
 from telegram import InlineKeyboardMarkup, Bot, InlineKeyboardButton
 from freezegun import freeze_time
-import bot
-from bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
+from src import bot
+from src.bot import (schedule_reminder, schedule_next_reminder, reminders,send_reminder,
                  add, handle_reminder_message, calendar_callback, show_reminders,
                  handle_remove_callback)
 
@@ -103,7 +103,7 @@ class TestAddFunction(IsolatedAsyncioTestCase):
         self.update = AsyncMock()
         self.context = AsyncMock()
 
-    @patch('bot.create_pagination_keyboard')
+    @patch('src.bot.create_pagination_keyboard')
     async def test_add(self, mock_create_pagination_keyboard):
         """Configura il mock per la create_pagination_keyboard"""
         mock_keyboard = AsyncMock()
@@ -293,8 +293,8 @@ class TestBotReminderFunctions(IsolatedAsyncioTestCase):
         }
 
         reminderz = {}
-        with patch('bot.schedule_reminder', new_callable=AsyncMock) as mock_schedule_reminder:
-            with patch('bot.reminders', reminderz):
+        with patch('src.bot.schedule_reminder', new_callable=AsyncMock) as mock_schedule_reminder:
+            with patch('src.bot.reminders', reminderz):
                 await handle_reminder_message(update, context)
                 self.assertIn(chat_id, reminderz)
                 mock_schedule_reminder.assert_awaited()
@@ -312,7 +312,7 @@ class TestScheduleReminder(IsolatedAsyncioTestCase):
         reminder_id = 'test123'
         reminder = {'time': datetime.now() - timedelta(hours=1)}
 
-        with patch('bot.schedule_next_reminder', new_callable=AsyncMock) as mocked_schedule_next:
+        with patch('src.bot.schedule_next_reminder', new_callable=AsyncMock) as mocked_schedule_next:
             await schedule_reminder(context, reminder_id, reminder)
 
             expected_delay = 60
@@ -326,7 +326,7 @@ class TestScheduleReminder(IsolatedAsyncioTestCase):
         reminder_id = 'test456'
         reminder = {'time': datetime.now() + timedelta(hours=1)}
 
-        with patch('bot.schedule_next_reminder', new_callable=AsyncMock) as mocked_schedule_next:
+        with patch('src.bot.schedule_next_reminder', new_callable=AsyncMock) as mocked_schedule_next:
             await schedule_reminder(context, reminder_id, reminder)
 
             expected_delay = 3600  # 1 hour in seconds
@@ -442,7 +442,7 @@ class TestShowRemindersFunction(IsolatedAsyncioTestCase):
         update.effective_chat.id = chat_id
         reminderz = {}
         # Patch del dizionario dei promemoria
-        with patch("bot.reminders", reminderz):
+        with patch("src.bot.reminders", reminderz):
             await show_reminders(update, context)
             update.message.reply_text.assert_awaited_with("Nessun promemoria salvato!")
 
@@ -465,7 +465,7 @@ class TestShowRemindersFunction(IsolatedAsyncioTestCase):
         ]
         expected_reply_markup = InlineKeyboardMarkup(expected_keyboard)
 
-        with patch("bot.reminders", reminderz):
+        with patch("src.bot.reminders", reminderz):
             await show_reminders(update, context)
             update.message.reply_text.assert_awaited_with(
                 expected_message, reply_markup=expected_reply_markup
@@ -496,7 +496,7 @@ class TestRemoveFunction(IsolatedAsyncioTestCase):
         update.callback_query.data = f"remove-{reminder_id}"
 
         # Patching del dizionario reminders all'interno del modulo bot
-        with patch("bot.reminders", reminderz):
+        with patch("src.bot.reminders", reminderz):
             # Chiamata alla funzione da testare
             await handle_remove_callback(update, update.callback_query)
 
@@ -529,7 +529,7 @@ class TestMain(TestCase):
     Classe di test della main
     """
 
-    @patch("bot.ApplicationBuilder")
+    @patch("src.bot.ApplicationBuilder")
     def test_main(self, mock_application_builder):
         """
         Test del main
