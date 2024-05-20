@@ -1,6 +1,2 @@
-pytest
-pytest-mock
-pytest-cov
-pylint
 python-telegram-bot
 freezegun
